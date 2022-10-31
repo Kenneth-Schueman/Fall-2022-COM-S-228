@@ -8,7 +8,6 @@ import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
 import org.w3c.dom.Node;
-
 /**
  *  
  * @author <KenSchue>
@@ -21,825 +20,678 @@ import org.w3c.dom.Node;
  * elements ensure that each node (except possibly the last one)
  * is at least half full.
  */
-public class StoutList<E extends Comparable<? super E>> extends AbstractSequentialList<E>
-{
-  /**
-   * Default number of elements that may be stored in each node.
-   */
-  private static final int DEFAULT_NODESIZE = 4;
-  
-  /**
-   * Number of elements that can be stored in each node.
-   */
-  private final int nodeSize;
-  
-  /**
-   * Dummy node for head.  It should be private but set to public here only  
-   * for grading purpose.  In practice, you should always make the head of a 
-   * linked list a private instance variable.  
-   */
-  public Node head;
-  
-  /**
-   * Dummy node for tail.
-   */
-  private Node tail;
-  
-  /**
-   * Number of elements in the list.
-   */
-  private int size;
-  
-  /**
-   * Constructs an empty list with the default node size.
-   */
-  public StoutList()
-  {
-    this(DEFAULT_NODESIZE);
-  }
+public class StoutList<E extends Comparable<? super E>> extends
+		AbstractSequentialList<E> {
+	/**
+	 * Default number of elements that may be stored in each node.
+	 */
+	private static final int DEFAULT_NODESIZE = 4;
 
-  /**
-   * Constructs an empty list with the given node size.
-   * @param nodeSize number of elements that may be stored in each node, must be 
-   *   an even number
-   */
-  public StoutList(int nodeSize)
-  {
-    if (nodeSize <= 0 || nodeSize % 2 != 0) throw new IllegalArgumentException();
-    
-    // dummy nodes
-    head = new Node();
-    tail = new Node();
-    head.next = tail;
-    tail.previous = head;
-    this.nodeSize = nodeSize;
-  }
-  
-  /**
-   * Constructor for grading only.  Fully implemented. 
-   * @param head
-   * @param tail
-   * @param nodeSize
-   * @param size
-   */
-  public StoutList(Node head, Node tail, int nodeSize, int size)
-  {
-	  this.head = head; 
-	  this.tail = tail; 
-	  this.nodeSize = nodeSize; 
-	  this.size = size; 
-  }
+	/**
+	 * Number of elements that can be stored in each node.
+	 */
+	private final int nodeSize;
 
-  @Override
-  public int size()
-  {
-    return (size);
-  }
-  
-  @Override
-  public boolean add(E item)
-  {
-    //Checks if item is null throws NullPointerException
-	  if (item == null)
-	  {
-		  throw new NullPointerException();
-	  }
-	  
-	  if (contains(item))
-		  return false;
-	  
-	  //Checks if list is empty
-	  if (size == 0)
-	  {
-		  Node n = new Node();
-		  n.addItem(item);
-		  
-		  head.next = n;
-		  n.previous = head;
-		  n.next = tail;
-		  tail.previous = n;
-	  }
-	  
-	  else
-	  {
-		  //Checks if last node is full, if not, adds item to last node
-		  if (tail.previous.count < nodeSize)
-			  tail.previous.addItem(item);
-		  
-		  //Checks if last node is full, creates another node and adds item if full
-		  else
-		  {
-			  Node n = new Node();
-			  n.addItem(item);
-			  
-			  Node temp = tail.previous;
-			  temp.next = n;
-			  n.previous = temp;
-			  n.next = temp;
-			  tail.previous = n;
-		  }
-	  }
-	  
-	  //Increments size of list
-	  size++;
-	  
-	  return (true);
-  }
+	/**
+	 * Dummy node for head. It should be private but set to public here only for
+	 * grading purpose. In practice, you should always make the head of a linked
+	 * list a private instance variable.
+	 */
+	public Node head;
 
-  @Override
-  public void add(int pos, E item)
-  {
-    //Checks if POS is out of bounds, throws IndexOutOFBoundsException
-	  if (pos < 0 || pos > size)
-		  throw new IndexOutOfBoundsException();
-	  
-	  //Checks fore empty list, adds new node & sets x at offset 0
-	  if (head.next == tail)
-		  add(item);
-	  
-	  NodeInfo nodeInfo = find(pos);
-	  Node temp = nodeInfo.node;
-	  
-	  int offset = nodeInfo.offset;
-	  
-	  //Checks if offset == 0
-	  if (offset == 0)
-	  {
-		  //Checks if node is not the head & has fewer then M elements, then sets X as predecessor
-		  if (temp.previous.count < nodeSize && temp.previous != head)
-		  {
-			  temp.previous.addItem(item);
-			  size++;
-			  
-			  return;
-		  }
-		  
-		  //Checks if node is the tail & if predecessor = elements,
-		  //then creates new node and sets x at offset 0
-		  else if (temp == tail)
-		  {
-			  add(item);
-			  size++;
-			  
-			  return;
-		  }
-	  }
-	  
-	  //Sets x at specific n node if space
-	  if (temp.count < nodeSize)
-		  temp.addItem(offset, item);
-	  
-	  //Split: sets n as successor
-	  else
-	  {
-		  Node Succesor = new Node();
-		  
-		  int halfPoint = (nodeSize / 2);
-		  int c = 0;
-		  
-		  while (c < halfPoint)
-		  {
-			  Succesor.addItem(temp.data[halfPoint]);
-			  temp.removeItem(halfPoint);
-			  
-			  c++;
-		  }
-		  
-		  Node Predecessor = temp.next;
-		  
-		  temp.next = Succesor;
-		  Succesor.previous = temp;
-		  Succesor.next = Predecessor;
-		  Predecessor.previous = Succesor;
-		  
-		  //Sets x in node with offset
-		  if (offset <= (nodeSize / 2))
-			  temp.addItem(offset, item);
-		  
-		  //Sets x in node with offset - 1/2 nodeSize
-		  if (offset > (nodeSize / 2))
-			 Succesor.addItem((offset - (nodeSize / 2)), item);
-		  
-		  //Increments size of list
-		  size++;
-	  }
-  }
+	/**
+	 * Dummy node for tail.
+	 */
+	private Node tail;
 
-  @Override
-  public E remove(int pos)
-  {
-    if (pos < 0 || pos > size)
-    		throw new IndexOutOfBoundsException();
-    
-    NodeInfo nodeInfo = find(pos);
-    Node temp = nodeInfo.node;
-    
-    int offset = nodeInfo.offset;
-    E nodeVal = temp.data[offset];
-    
-    //Checks if node containing x is tail or has one element
-    if (temp.next == tail && temp.count == 1)
-    {
-    	Node Predecessor = temp.previous;
-    	
-    	Predecessor.next = temp.next;
-    	temp.next.previous = Predecessor;
-    	
-    	temp = null;
-    }
-    
-    //If node is tail and has more then two or elements,
-    //or if n has more than nodeSize/2 elements, removes x from node
-    else if (temp.next == tail || temp.count > (nodeSize / 2))
-    {
-    	temp.removeItem(offset);
-    }
-    
-    //Node must have the greatest number of elements, performs merge
-    else
-    {
-    	temp.removeItem(offset);
-    	
-    	Node Succesor = temp.next;
-    	
-    	//Mini-merge
-    	if (Succesor.count > (nodeSize / 2))
-    	{
-    		temp.addItem(Succesor.data[0]);
-    		Succesor.removeItem(0);
-    	}
-    	
-    	//Full merge
-    	else if (Succesor.count <= (nodeSize / 2))
-    	{
-    		for (int i = 0; i < Succesor.count; i++)
-    			temp.addItem(Succesor.data[i]);
-    		
-    		temp.next = Succesor.next;
-    		Succesor.next.previous = temp;
-    		
-    		Succesor = null;
-    	}
-    }
-    
-    size--;
-    
-    return (nodeVal);
-  }
+	/**
+	 * Number of elements in the list.
+	 */
+	private int size;
 
-  /**
-   * Sort all elements in the stout list in the NON-DECREASING order. You may do the following. 
-   * Traverse the list and copy its elements into an array, deleting every visited node along 
-   * the way.  Then, sort the array by calling the insertionSort() method.  (Note that sorting 
-   * efficiency is not a concern for this project.)  Finally, copy all elements from the array 
-   * back to the stout list, creating new nodes for storage. After sorting, all nodes but 
-   * (possibly) the last one must be full of elements.  
-   *  
-   * Comparator<E> must have been implemented for calling insertionSort().    
-   */
-  public void sort()
-  {
-	  E[] sortDataList = (E[]) new Comparable[size];
-	  
-	  int index = 0;
-	  Node temp = head.next;
-	  
-	  while (temp != tail)
-	  {
-		  for (int i = 0; i < temp.count; i++)
-		  {
-			  sortDataList[index] = temp.data[i];
-			  index++;
-		  }
-		  temp = temp.next;
-	  }
-	  
-	  head.next = tail;
-	  tail.previous = head;
-	  
-	  insertionSort(sortDataList, new ElementComparator());
-	  
-	  size = 0;
-	  
-	  for (int i = 0; i < sortDataList.length; i++)
-		  add(sortDataList[i]);
-  }
-  
-  /**
-   * Sort all elements in the stout list in the NON-INCREASING order. Call the bubbleSort()
-   * method.  After sorting, all but (possibly) the last nodes must be filled with elements.  
-   *  
-   * Comparable<? super E> must be implemented for calling bubbleSort(). 
-   */
-  public void sortReverse() 
-  {
-	  E[] ReverseSortDataList = (E[]) new Comparable[size];
-	  
-	  int index = 0;
-	  Node temp = head.next;
-	  
-	  while (temp != tail)
-	  {
-		  for (int i = 0; i < temp.count; i++)
-		  {
-			  ReverseSortDataList[index] = temp.data[i];
-			  index++;
-		  }
-		  temp = temp.next;
-	  }
-	  
-	  head.next = tail;
-	  tail.previous = head;
-	  
-	  bubbleSort(ReverseSortDataList);
-	  
-	  size = 0;
-	  
-	  for (int i = 0; i < ReverseSortDataList.length; i++)
-		  add(ReverseSortDataList[i]);
-  }
-  
-  @Override
-  public Iterator<E> iterator()
-  {
-    return new StoutListIterator();
-  }
+	/**
+	 * Constructs an empty list with the default node size.
+	 */
+	public StoutList() {
+		this(DEFAULT_NODESIZE);
+	}
 
-  @Override
-  public ListIterator<E> listIterator()
-  {
-    return new StoutListIterator();
-  }
+	 /**
+	   * Constructs an empty list with the given node size.
+	   * @param nodeSize number of elements that may be stored in each node, must be 
+	   *   an even number
+	   */
+	public StoutList(int nodeSize) 
+	{
+		if (nodeSize <= 0 || nodeSize % 2 != 0)
+			throw new IllegalArgumentException();
 
-  @Override
-  public ListIterator<E> listIterator(int index)
-  {
-    return new StoutListIterator(index);
-  }
-  
-  /**
-   * Returns a string representation of this list showing
-   * the internal structure of the nodes.
-   */
-  public String toStringInternal()
-  {
-    return toStringInternal(null);
-  }
+		// dummy nodes
+		head = new Node();
+		tail = new Node();
+		head.next = tail;
+		tail.previous = head;
+		this.nodeSize = nodeSize;
+	}
 
-  /**
-   * Returns a string representation of this list showing the internal
-   * structure of the nodes and the position of the iterator.
-   *
-   * @param iter
-   *            an iterator for this list
-   */
-  public String toStringInternal(ListIterator<E> iter) 
-  {
-      int count = 0;
-      int position = -1;
-      
-      if (iter != null) 
-          position = iter.nextIndex();
-   
-      StringBuilder sb = new StringBuilder();
-      sb.append('[');
-      Node current = head.next;
-      
-      while (current != tail) 
-      {
-          sb.append('(');
-          E data = current.data[0];
-          
-          if (data == null) 
-              sb.append("-");
-          
-          else 
-          {
-              if (position == count) 
-              {
-                  sb.append("| ");
-                  position = -1;
-              }
-              
-              sb.append(data.toString());
-              ++count;
-          }
+	/**
+	 * Constructor for grading only. Fully implemented.
+	 * 
+	 * @param head
+	 * @param tail
+	 * @param nodeSize
+	 * @param size
+	 */
+	public StoutList(Node head, Node tail, int nodeSize, int size) 
+	{
+		this.head = head;
+		this.tail = tail;
+		this.nodeSize = nodeSize;
+		this.size = size;
+	}
 
-          for (int i = 1; i < nodeSize; ++i) 
-          {
-             sb.append(", ");
-              data = current.data[i];
-              
-              if (data == null) 
-                  sb.append("-");
-              
-               else 
-               {
-                  if (position == count) 
-                  {
-                      sb.append("| ");
-                      position = -1;
-                  }
-                  
-                  sb.append(data.toString());
-                  ++count;
-
-                  // iterator at end
-                  if (position == size && count == size) 
-                  {
-                      sb.append(" |");
-                      position = -1;
-                  }
-             }
-          }
-          
-          sb.append(')');
-          current = current.next;
-          if (current != tail)
-              sb.append(", ");
-      }
-      sb.append("]");
-      return sb.toString();
-  }
-
-  public boolean contains(E item)
-  {
-	  if (size < 1)
-		  return (false);
-	  
-	  Node temp = head.next;
-	  
-	  while (temp != tail)
-	  {
-		  for (int i = 0; i < temp.count; i++)
-		  {
-			  if (temp.data[i].equals(item))
-				  return (true);
-			  
-			  temp = temp.next;
-		  }
-	  }
-	  
-	  return (false);
-  }
-  
-//Helper class to represent a specific point on the list
-  private class NodeInfo
-  {
-	  public Node node;
-	  public int offset;
-	  
-	  public NodeInfo(Node node, int offset)
-	  {
-		  this.node = node;
-		  this.offset = offset;
-	  }
-  }
-  
-	  //Helper method to locate a specific item
-	  private NodeInfo find(int pos)
-	  {
-		  Node temp = head.next;
-		  int currentPosition = 0;
-		  
-		  while (temp != tail)
-		  {
-			  if (currentPosition + temp.count <= pos)
-			  {
-				  currentPosition += temp.count;
-				  temp = temp.next;
-				  
-				  continue;
-			  }
-			  
-			  NodeInfo nodeInfo = new NodeInfo(temp, pos - currentPosition);
-			  return (nodeInfo);
-		  }
-		  
-		  return (null);
-	  }
-  
-  /**
-   * Node type for this list.  Each node holds a maximum
-   * of nodeSize elements in an array.  Empty slots
-   * are null.
-   */
-  private class Node
-  {
-    /**
-     * Array of actual data elements.
-     */
-    // Unchecked warning unavoidable.
-    public E[] data = (E[]) new Comparable[nodeSize];
-    
-    /**
-     * Link to next node.
-     */
-    public Node next;
-    
-    /**
-     * Link to previous node;
-     */
-    public Node previous;
-    
-    /**
-     * Index of the next available offset in this node, also 
-     * equal to the number of elements in this node.
-     */
-    public int count;
-
-    /**
-     * Adds an item to this node at the first available offset.
-     * Precondition: count < nodeSize
-     * @param item element to be added
-     */
-    void addItem(E item)
-    {
-      if (count >= nodeSize)
-        return;
-      
-      data[count++] = item;
-      //useful for debugging
-      //      System.out.println("Added " + item.toString() + " at index " + count + " to node "  + Arrays.toString(data));
-    }
-  
-    /**
-     * Adds an item to this node at the indicated offset, shifting
-     * elements to the right as necessary.
-     * 
-     * Precondition: count < nodeSize
-     * @param offset array index at which to put the new element
-     * @param item element to be added
-     */
-    void addItem(int offset, E item)
-    {
-      if (count >= nodeSize)
-    	  return;
-
-      for (int i = count - 1; i >= offset; --i)
-        data[i + 1] = data[i];
-
-      ++count;
-      data[offset] = item;
-      //useful for debugging 
-//      System.out.println("Added " + item.toString() + " at index " + offset + " to node: "  + Arrays.toString(data));
-    }
-
-    /**
-     * Deletes an element from this node at the indicated offset, 
-     * shifting elements left as necessary.
-     * Precondition: 0 <= offset < count
-     * @param offset
-     */
-    void removeItem(int offset)
-    {
-      E item = data[offset];
-      
-      for (int i = offset + 1; i < nodeSize; ++i)
-        data[i - 1] = data[i];
-
-      data[count - 1] = null;
-      --count;
-    } 
-  }
- 
-  private class StoutListIterator implements ListIterator<E>
-  {
-	final int LAST_ACTION_PREV = 0;
-	final int LAST_ACTION_NEXT = 1;
 	
-	int currentPosition;
-	int lastAction;
-	
-	public E[] dataList;
+	@Override
+	public int size() 
+	{
+		if (size > Integer.MAX_VALUE)
+			return (Integer.MAX_VALUE);
+		return size;
+	}
 
-	  
-    /**
-     * Default constructor 
-     */
-    public StoutListIterator()
-    {
-    	currentPosition = 0;
-    	lastAction = -1;
-    	
-    	setup();
-    }
-
-    /**
-     * Constructor finds node at a given position.
-     * @param pos
-     */
-    public StoutListIterator(int pos)
-    {
-    	currentPosition = pos;
-    	lastAction = -1;
-    	
-    	setup();
-    }
-    
-    //Takes StoutList and put its data into dataList
-    private void setup()
-    {
-    	dataList = (E[]) new Comparable[size];
-    	
-    	int index = 0;
-    	Node temp = head.next;
-    	
-    	while (temp != tail)
-    	{
-    		for (int i = 0; i < temp.count; i++)
-    		{
-    			dataList[index] = temp.data[i];
-    			index++;
-    		}
-    	}
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-		if (currentPosition >= size)
-			return (false);
+	@Override
+	public boolean add(E item) throws NullPointerException 
+	{
+		if (item == null)
+			throw new NullPointerException();
 		
-		else
-			return (true);
-    }
+		add(size, item);
+		return true;
+	}
 
-    @Override
-    public E next()
-    {
-		if (!hasNext())
+	@Override
+	public void add(int pos, E item) 
+	{
+		if (item == null)
+			throw new NullPointerException();
+		
+		if (pos < 0 || pos > size)
+			throw new IndexOutOfBoundsException();
+		
+		NodeInfo nodeInfo = find(pos);
+		add(nodeInfo.node, nodeInfo.offset, item);
+	}
+
+	
+	@Override
+	public E remove(int pos) 
+	{
+		if (pos < 0 || pos > size)
+			throw new IndexOutOfBoundsException();
+		
+		NodeInfo nodeInfo = find(pos);
+		return remove(nodeInfo);
+	}
+
+	/**
+	   * Sort all elements in the stout list in the NON-DECREASING order. You may do the following. 
+	   * Traverse the list and copy its elements into an array, deleting every visited node along 
+	   * the way.  Then, sort the array by calling the insertionSort() method.  (Note that sorting 
+	   * efficiency is not a concern for this project.)  Finally, copy all elements from the array 
+	   * back to the stout list, creating new nodes for storage. After sorting, all nodes but 
+	   * (possibly) the last one must be full of elements.  
+	   *  
+	   * Comparator<E> must have been implemented for calling insertionSort().    
+	   */
+	public void sort() 
+	{
+		Iterator<E> iter = iterator();
+		
+		E[] sortDataList = (E[]) new Comparable[size()];
+		
+		for (int i = 0; i < size; i++) 
+			sortDataList[i] = iter.next();
+		
+		head.next = tail;
+		tail.previous = head;
+		size = 0;
+		
+		Comparator<E> comp = new genericComparator();
+		insertionSort(sortDataList, comp);
+	}
+
+	/**
+	 * Sort all elements in the Stout list in the NON-INCREASING order. Call
+	 * the bubbleSort() method. After sorting, all but (possibly) the last nodes
+	 * must be filled with elements.
+	 * 
+	 * Comparable<? super E> must be implemented for calling bubbleSort().
+	 */
+	public void sortReverse() 
+	{
+		Iterator<E> iter = iterator();
+		E[] ReverseSortDataList = (E[]) new Comparable[size];
+		
+		for (int i = 0; i < size; i++) 
+			ReverseSortDataList[i] = iter.next();
+		
+		head.next = tail;
+		tail.previous = head;
+		size = 0;
+		
+		bubbleSort(ReverseSortDataList);
+		
+		for(int i = 0 ; i < ReverseSortDataList.length; i++)
+			this.add(ReverseSortDataList[i]);
+	}
+
+	@Override
+	public Iterator<E> iterator() {
+		return listIterator();
+	}
+
+	@Override
+	public ListIterator<E> listIterator() {
+		return listIterator(0);
+	}
+
+	@Override
+	public ListIterator<E> listIterator(int index) throws IndexOutOfBoundsException 
+	{
+		if (index < 0 || index > size)
+			throw new IndexOutOfBoundsException();
+		
+		StoutListIterator iter = new StoutListIterator(index);
+		return iter;
+	}
+
+	/**
+	   * Returns a string representation of this list showing
+	   * the internal structure of the nodes.
+	   */
+	public String toStringInternal() 
+	{
+		return toStringInternal(null);
+	}
+
+	/**
+	 * Returns a string representation of this list showing the internal
+	 * structure of the nodes and the position of the iterator.
+	 * 
+	 * @param iter
+	 *            an iterator for this list
+	 */
+	public String toStringInternal(ListIterator<E> iter) {
+		int count = 0;
+		int position = -1;
+		if (iter != null) {
+			position = iter.nextIndex();
+		}
+
+		StringBuilder sb = new StringBuilder();
+		sb.append('[');
+		Node current = head.next;
+		while (current != tail) {
+			sb.append('(');
+			E data = current.data[0];
+
+			for (int i = 0; i < nodeSize; ++i) {
+				if (i != 0)
+					sb.append(", ");
+				data = current.data[i];
+				if (data == null) {
+					sb.append("-");
+				} else {
+					if (position == count) {
+						sb.append("| ");
+						position = -1;
+					}
+					sb.append(data.toString());
+					++count;
+
+					// iterator at end
+					if (position == size && count == size) {
+						sb.append(" |");
+						position = -1;
+					}
+				}
+			}
+			sb.append(')');
+			current = current.next;
+			if (current != tail)
+				sb.append(", ");
+		}
+		sb.append("]");
+		return sb.toString();
+	}
+
+	/**
+	   * Node type for this list.  Each node holds a maximum
+	   * of nodeSize elements in an array.  Empty slots
+	   * are null.
+	   */
+	private class Node {
+		/**
+		 * Array of actual data elements.
+		 */
+		// Unchecked warning unavoidable.
+		public E[] data = (E[]) new Comparable[nodeSize];
+
+		/**
+		 * unite to next node.
+		 */
+		public Node next;
+
+		/**
+		 * unite to previous node;
+		 */
+		public Node previous;
+
+		/**
+		 * Index of the next available offset in this node, also equal to the
+		 * number of elements in this node.
+		 */
+		public int count;
+
+		/**
+		 * Adds an item to this node at the first available offset.
+		 * Precondition: count < nodeSize
+		 * 
+		 * @param item
+		 *            element to be added
+		 */
+		void addItem(E item) {
+			if (count >= nodeSize) {
+				return;
+			}
+			data[count++] = item;
+			//useful for debugging
+		    //      System.out.println("Added " + item.toString() + " at index " + count + " to node "  + Arrays.toString(data));
+		}
+
+		/**
+	     * Adds an item to this node at the indicated offset, shifting
+	     * elements to the right as necessary.
+	     * 
+	     * Precondition: count < nodeSize
+	     * @param offset array index at which to put the new element
+	     * @param item element to be added
+	     */
+		void addItem(int offset, E item) 
+		{
+			if (count >= nodeSize) 
+				return;
+			for (int i = count - 1; i >= offset; --i)
+				data[i + 1] = data[i];
+			
+			++count;
+			data[offset] = item;
+			// useful for debugging
+			// System.out.println("Added " + item.toString() + " at index " + offset + " to node: " + Arrays.toString(data));
+		}
+
+		/**
+		 * Deletes an element from this node at the indicated offset, shifting
+		 * elements left as necessary. Precondition: 0 <= offset < count
+		 * 
+		 * @param offset
+		 */
+		void removeItem(int offset) {
+			E item = data[offset];
+			
+			for (int i = offset + 1; i < nodeSize; ++i)
+				data[i - 1] = data[i];
+			
+			data[count - 1] = null;
+			--count;
+		}
+	}
+	
+	private class NodeInfo 
+	{
+		
+		public Node node;
+		
+		public int offset;
+
+		//Helper class to represent a specific point on the list
+		public NodeInfo(Node node, int offset) 
+		{
+			this.node = node;
+			this.offset = offset;
+		}
+	}
+
+	//Helper method to locate a specific item
+	NodeInfo find(int pos) 
+	{
+		if (pos == -1)
+			return new NodeInfo(head, 0);
+		
+		if (pos == size)
+			return new NodeInfo(tail, 0);
+
+		Node current = head.next;
+		int index = current.count - 1;
+		
+		while (current != tail && pos > index) 
+		{
+			current = current.next;
+			index += current.count;
+		}
+		
+		int offset = current.count + pos - index - 1;
+		
+		return new NodeInfo(current, offset);
+	}
+
+	private NodeInfo add(Node n, int offset, E item) 
+	{
+		if (item == null)
+			throw new NullPointerException();
+		
+		NodeInfo NodeInfo = null;
+		
+		if (size == 0) 
+		{
+			Node Node = new Node();
+			
+			Node.addItem(item);
+			unite(head, Node);
+			NodeInfo = new NodeInfo(Node, 0);
+		} 
+		
+		else if (offset == 0 && n.previous.count < nodeSize && n.previous != head) 
+		{
+			n.previous.addItem(item);
+			NodeInfo = new NodeInfo(n.previous, n.previous.count - 1);
+		} 
+		
+		else if (offset == 0 && n == tail && n.previous.count == nodeSize) 
+		{
+			Node Node = new Node();
+			
+			Node.addItem(item);
+			unite(tail.previous, Node);
+			NodeInfo = new NodeInfo(Node, 0);
+
+		} 
+		
+		else if (n.count < nodeSize) 
+		{
+			n.addItem(offset, item);
+			NodeInfo = new NodeInfo(n, offset);
+		} 
+		
+		else 
+		{
+			Node Node = new Node();
+			
+			unite(n, Node);
+			
+			for (int i = nodeSize - 1; i >= nodeSize - nodeSize / 2; i--) 
+			{
+				Node.addItem(0, n.data[i]);
+				n.removeItem(i);
+			}
+			
+			if (offset <= nodeSize / 2) 
+			{
+				n.addItem(offset, item);
+				NodeInfo = new NodeInfo(n, offset);
+			} 
+			
+			else 
+			{
+				Node.addItem(offset - nodeSize / 2, item);
+				NodeInfo = new NodeInfo(Node, offset - nodeSize / 2);
+			}
+		}
+		
+		size++;
+		return (NodeInfo);
+	}
+
+	private E remove(NodeInfo nodeInfo) 
+	{
+		E E = nodeInfo.node.data[nodeInfo.offset];
+		
+		if (nodeInfo.node.next == tail && nodeInfo.node.count == 1) 
+			seperate(nodeInfo.node); 
+		
+		else if (nodeInfo.node.next == tail || nodeInfo.node.count > nodeSize / 2) 
+			nodeInfo.node.removeItem(nodeInfo.offset);
+		
+		else if (nodeInfo.node.count <= nodeSize / 2) 
+		{
+			nodeInfo.node.removeItem(nodeInfo.offset);
+			
+			if (nodeInfo.node.next.count > nodeSize / 2) 
+			{
+				nodeInfo.node.addItem(nodeInfo.node.next.data[0]);
+				nodeInfo.node.next.removeItem(0);
+			} 
+			
+			else 
+			{
+				for (E e : nodeInfo.node.next.data) 
+					if (e != null)
+						nodeInfo.node.addItem(e);
+				
+				seperate(nodeInfo.node.next);
+			}
+		}
+		
+		size--;
+		
+		return (E);
+	}
+
+	private void unite(Node current, Node newNode) 
+	{
+		newNode.previous = current;
+		newNode.next = current.next;
+		current.next.previous = newNode;
+		current.next = newNode;
+	}
+
+	private void seperate(Node current) 
+	{
+		current.previous.next = current.next;
+		current.next.previous = current.previous;
+	}
+
+	private class genericComparator<E extends Comparable<? super E>> implements Comparator 
+	{
+		@Override
+		public int compare(Object object1, Object object2) 
+		{
+			E first = (E) object1;
+			E second = (E) object2;
+			
+			return first.compareTo(second);
+		}
+	}
+
+	private class StoutListIterator implements ListIterator<E> 
+	{
+		private int index;
+
+		private NodeInfo lastAction;
+
+		private boolean canRemove;
+
+		/**
+		 * Default constructor
+		 */
+		public StoutListIterator() 
+		{
+			index = 0;
+			lastAction = null;
+			canRemove = false;
+		}
+
+		/**
+	     * Constructor finds node at a given position.
+	     * @param pos
+	     */
+		public StoutListIterator(int pos) 
+		{
+			if (pos < 0 || pos > size)
+				throw new IndexOutOfBoundsException();
+			
+			index = pos;
+			lastAction = null;
+			canRemove = false;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return (index < size);
+		}
+
+		@Override
+		public E next() throws NoSuchElementException 
+		{
+			if (hasNext()) 
+			{
+				NodeInfo n = find(index++);
+				
+				lastAction = n;
+				canRemove = true;
+				
+				return (n.node.data[n.offset]);
+			}
+			
 			throw new NoSuchElementException();
+		}
+
+		@Override
+		public void remove() 
+		{
+			if (!canRemove)
+				throw new IllegalStateException();
+			
+			NodeInfo cursorInfo = find(index);
+			
+			if (lastAction.node == cursorInfo.node && lastAction.offset < cursorInfo.offset 
+					|| lastAction.node != cursorInfo.node)
+				
+				index--;
+			
+			StoutList.this.remove(lastAction);
+			lastAction = null;
+			canRemove = false;
+		}
 		
-		lastAction = LAST_ACTION_NEXT;
+		@Override
+		public boolean hasPrevious() {
+			return index > 0;
+		}
+
+		//Checks if iterator had previous available value
+		@Override
+		public E previous() throws NoSuchElementException 
+		{
+			if (hasPrevious()) 
+			{
+				NodeInfo n = find(--index);
+				lastAction = n;
+				canRemove = true;
+				return n.node.data[n.offset];
+			}
+			
+			throw new NoSuchElementException();
+		}
+
+		//Returns index of next open element
+		@Override
+		public int nextIndex() 
+		{
+			return index;
+		}
+
+		//Returns index of previous element
+		@Override
+		public int previousIndex() {
+			return index - 1;
+		}
+
+		//Returns previous open element 
+		@Override
+		public void set(E E) 
+		{
+			if (E == null)
+				throw new NullPointerException();
+			
+			if (!canRemove)
+				throw new IllegalStateException();
+			
+			lastAction.node.data[lastAction.offset] = E;
+		}
+
+		@Override
+		public void add(E e) 
+		{
+			if (e == null)
+				throw new NullPointerException();
+			
+			canRemove = false;
+			StoutList.this.add(index++, e);
+		}
+	}
+
+	/**
+	   * Sort an array arr[] using the insertion sort algorithm in the NON-DECREASING order. 
+	   * @param arr   array storing elements from the list 
+	   * @param comp  comparator used in sorting 
+	   */
+	private void insertionSort(E[] arr, Comparator<? super E> comp) 
+	{
+		for (int i = 1; i < arr.length; i++) 
+		{
+			E temp = arr[i];
+			int j = i - 1;
+			
+			while(j > -1 && comp.compare(arr[j], temp) > 0) 
+			{
+				arr[j + 1] = arr[j];
+				j--;
+			}
+			
+			arr[j + 1] = temp;
+		}
 		
-		return (dataList[currentPosition++]);
-    }
+		for(int i = 0 ; i < arr.length; i++)
+			this.add(arr[i]);
+	}
 
-    @Override
-    public void remove()
-    {
-    	if (lastAction == LAST_ACTION_NEXT)
-    	{
-    		StoutList.this.remove(currentPosition - 1);
-    		
-    		setup();
-    		
-    		lastAction = -1;
-    		currentPosition--;
-    		
-    		if (currentPosition < 0)
-    			currentPosition = 0;
-    	}
-    	
-    	else if (lastAction == LAST_ACTION_PREV)
-    	{
-    		StoutList.this.remove(currentPosition);
-    		
-    		setup();
-    		
-    		lastAction = -1;
-    	}
-    	
-    	else
-    		throw new IllegalStateException();
-    }
-    
- // Other methods you may want to add or override that could possibly facilitate
- 		// other operations, for instance, addition, access to the previous element,
- 		// etc.
- 		//
- 		// ...
- 		//
-    
-    //Checks if iterator had previous available value
-    @Override
-    public boolean hasPrevious()
-    {
-    	if (currentPosition <= 0)
-    		return (false);
-    	
-    	else
-    		return (true);
-    }
-    
-    //Returns index of next open element
-    @Override
-    public int nextIndex()
-    {
-    	return (currentPosition);
-    }
-    
-    //Returns previous open element 
-    @Override
-    public E previous()
-    {
-    	if (!hasPrevious())
-    		throw new NoSuchElementException();
-    	
-    	lastAction = LAST_ACTION_PREV;
-    	currentPosition--;
-    	
-    	return (dataList[currentPosition]);
-    }
-    
-    //Returns index of previous element
-    @Override
-    public int previousIndex()
-    {
-    	return (currentPosition - 1);
-    }
-    
-    //Replace current element with arg0
-    @Override
-    public void set(E arg0)
-    {
-    	if (lastAction == LAST_ACTION_NEXT)
-    	{
-    		NodeInfo nodeInfo = find(currentPosition - 1);
-    		nodeInfo.node.data[nodeInfo.offset] = arg0;
-    		dataList[currentPosition - 1] = arg0;
-    	}
-    	
-    	else if (lastAction == LAST_ACTION_PREV)
-    	{
-    		NodeInfo nodeInfo = find(currentPosition);
-    		nodeInfo.node.data[nodeInfo.offset] = arg0;
-    		dataList[currentPosition] = arg0;
-    	}
-    	
-    	else
-    		throw new IllegalStateException();
-    }
-    
-    @Override
-    public void add(E arg0)
-    {
-    	if (arg0 == null)
-    		throw new NullPointerException();
-    	
-    	StoutList.this.add(currentPosition, arg0);
-    	currentPosition++;
-    	
-    	setup();
-    	
-    	lastAction = -1;
-    }
-  }
-  
-
-  /**
-   * Sort an array arr[] using the insertion sort algorithm in the NON-DECREASING order. 
-   * @param arr   array storing elements from the list 
-   * @param comp  comparator used in sorting 
-   */
-  private void insertionSort(E[] arr, Comparator<? super E> comp)
-  {
-	  for (int i = 1; i < arr.length; i++)
-	  {
-		  E k = arr[i];
-		  int j = i--;
-		  
-		  while (j >= 0 && comp.compare(arr[j], k) > 0)
-		  {
-			  arr[j + 1] = arr[j];
-			  j--;
-		  }
-		  
-		  arr[j + 1] = k;
-	  }
-  }
-  
-  /**
-   * Sort arr[] using the bubble sort algorithm in the NON-INCREASING order. For a 
-   * description of bubble sort please refer to Section 6.1 in the project description. 
-   * You must use the compareTo() method from an implementation of the Comparable 
-   * interface by the class E or ? super E. 
-   * @param arr  array holding elements from the list
-   */
-  private void bubbleSort(E[] arr)
-  {
-	  int k = arr.length;
-	  
-	  for (int i = 0; i < k - i - 1; i++)
-		  for (int j = 0; j < k - i - 1; j++)
-			  if (arr[j].compareTo(arr[j + 1]) < 0)
-			  {
-				  E temp = arr[j];
-				  arr[j] = arr[j + 1];
-				  arr[j + 1] = temp;
-			  }
-  }
-  
-  //Comparator used by insertion sort
-  class ElementComparator <E extends Comparable<E>> implements Comparator<E>
-  {
-	  @Override
-	  public int compare(E arg0, E arg1)
-	  {
-		  return arg0.compareTo(arg1);
-	  }
-  }
- 
-
+	/**
+	   * Sort arr[] using the bubble sort algorithm in the NON-INCREASING order. For a 
+	   * description of bubble sort please refer to Section 6.1 in the project description. 
+	   * You must use the compareTo() method from an implementation of the Comparable 
+	   * interface by the class E or ? super E. 
+	   * @param arr  array holding elements from the list
+	   */
+	private void bubbleSort(E[] arr) 
+	{
+		boolean swap = false;
+		
+		for (int i = 1; i < arr.length; i++) 
+		{
+			if (arr[i - 1].compareTo(arr[i]) < 0) 
+			{
+				E temp = arr[i - 1];
+				arr[i - 1] = arr[i];
+				arr[i] = temp;
+				swap = true;
+			}
+		}
+		
+		if (!swap) 
+			return;
+		
+		else 
+			bubbleSort(arr);
+	}
 }
